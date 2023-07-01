@@ -1,0 +1,58 @@
+const { SlashCommandBuilder } = require("discord.js");
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName("nombre del comando")
+        .setDescription("Descripcion del comando")
+        .addStringOption((option) =>
+            option
+                .setName("nombre de la opcion del comando")
+                .setDescription("descripcion de la opcion del comando")
+        ),
+    async execute(interaction) {},
+};
+
+
+///////////////////////Botones
+
+const {
+    ChatInputCommandInteraction,
+    SlashCommandBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+} = require("discord.js");
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName("buttontest")
+        .setDescription("Prueba de botones"),
+
+    async execute(interaction) {
+        const button = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`hola`)
+                .setLabel("Nuevo")
+                .setStyle(ButtonStyle.Success)
+        );
+
+        await interaction.reply({ components: [button] });
+    },
+};
+
+
+/// Crear Canal
+const canal = await interaction.guild.channels.create({
+            name: `ticket- ${interaction.user.tag}`,
+            type: ChannelType.GuildText,
+            parent: categoryId, // Asignar la categoría al nuevo canal
+        });
+
+        canal.permissionOverwrites.create(interaction.user.id, {
+            ViewChannel: true,
+            SendMessages: true,
+        });
+
+        canal.permissionOverwrites.create(canal.guild.roles.everyone, {
+            ViewChannel: false,
+            SendMessages: false,
+        });
