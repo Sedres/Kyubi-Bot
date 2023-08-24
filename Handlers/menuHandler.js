@@ -7,6 +7,7 @@ async function loadMenus(client) {
 
     await client.menus.clear();
     const Files = await loadFiles("Menus");
+    console.log(Files);
     Files.forEach((file) => {
         const menu = require(file);
         client.menus.set(menu.data.name, menu);

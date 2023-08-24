@@ -39,110 +39,116 @@ module.exports = {
             ephemeral: true,
         });
 
-        const voiceChannel = interaction.member.voice.channel;
+        const voiceChannel = await interaction.member.voice.channel;
 
         if (!voiceChannel) {
             return interaction.followUp(
                 "Debes estar en un canal de voz para reproducir música."
             );
-        }
+        } else {
+            const subCommand = interaction.options.getSubcommand();
+            switch (subCommand) {
+                case `play`:
+                    {
+                        const guildId = interaction.guild.id;
+                        const musicData = getOrCreateMusicData(guildId);
 
-        const subCommand = interaction.options.getSubcommand();
-        switch (subCommand) {
-            case `play`:
-                {
-                    const guildId = interaction.guild.id;
-                    const musicData = getOrCreateMusicData(guildId);
+                        const song = interaction.options.getString("cancion");
+                        const ytInfo = await play.search(song, { limit: 1 });
+                        const videoUrl = ytInfo[0].url;
+                        const duration = ytInfo[0].durationInSec;
+                        const thumbnail = ytInfo[0].thumbnails[0].url;
+                        const requestedBy = interaction.user.username;
+                        const playlistItem = {
+                            videoUrl,
+                            duration,
+                            thumbnail,
+                            requestedBy,
+                        };
+                        musicData.playlist.push(playlistItem);
 
-                    const song = interaction.options.getString("cancion");
-                    const ytInfo = await play.search(song, { limit: 1 });
-                    const videoUrl = ytInfo[0].url;
-                    const duration = ytInfo[0].durationInSec;
-                    const thumbnail = ytInfo[0].thumbnails[0].url;
-                    const requestedBy = interaction.user.username;
-                    const playlistItem = {
-                        videoUrl,
-                        duration,
-                        thumbnail,
-                        requestedBy,
-                    };
-                    musicData.playlist.push(playlistItem);
-
-                    if (
-                        !musicData.isPlaying &&
-                        musicData.playlist.length === 1
-                    ) {
-                        musicData.isPlaying = true;
-                        await playNextSong(voiceChannel, interaction, guildId);
-                    } else {
-                        const embed = createPlaylistEmbed(musicData.playlist);
-
-                        if (musicData.playlistMessage) {
-                            await editPlaylistMessage(
+                        if (
+                            !musicData.isPlaying &&
+                            musicData.playlist.length === 1
+                        ) {
+                            musicData.isPlaying = true;
+                            await playNextSong(
+                                voiceChannel,
                                 interaction,
-                                embed,
                                 guildId
                             );
                         } else {
-                            await sendPlaylistMessage(
-                                interaction,
-                                embed,
-                                guildId
+                            const embed = createPlaylistEmbed(
+                                musicData.playlist
                             );
+
+                            if (musicData.playlistMessage) {
+                                await editPlaylistMessage(
+                                    interaction,
+                                    embed,
+                                    guildId
+                                );
+                            } else {
+                                await sendPlaylistMessage(
+                                    interaction,
+                                    embed,
+                                    guildId
+                                );
+                            }
                         }
                     }
-                }
-                break;
-            case `stop`:
-                {
-                    const guildId = interaction.guild.id;
-                    const musicData = getOrCreateMusicData(guildId);
+                    break;
+                case `stop`:
+                    {
+                        const guildId = interaction.guild.id;
+                        const musicData = getOrCreateMusicData(guildId);
 
-                    if (!musicData.isPlaying) {
-                        return interaction.followUp(
-                            "No hay canciones reproduciéndose."
-                        );
+                        if (!musicData.isPlaying) {
+                            return interaction.followUp(
+                                "No hay canciones reproduciéndose."
+                            );
+                        }
+
+                        musicData.playlist.length = 0;
+                        musicData.isPlaying = false;
+                        musicData.playlistMessage = null;
+
+                        if (musicData.connection) {
+                            musicData.connection.destroy();
+                            musicData.connection = null;
+                        }
+
+                        interaction.followUp("Reproducción detenida.");
                     }
+                    break;
+                case `skip`:
+                    {
+                        const guildId = interaction.guild.id;
+                        const musicData = getOrCreateMusicData(guildId);
 
-                    musicData.playlist.length = 0;
-                    musicData.isPlaying = false;
-                    musicData.playlistMessage = null;
+                        if (!musicData.isPlaying) {
+                            return interaction.followUp(
+                                "No hay canciones reproduciéndose."
+                            );
+                        }
 
-                    if (musicData.connection) {
-                        musicData.connection.destroy();
-                        musicData.connection = null;
+                        if (musicData.playlist.length === 0) {
+                            return interaction.followUp(
+                                "No hay más canciones en la lista."
+                            );
+                        }
+
+                        interaction.followUp("Canción saltada.");
+
+                        if (musicData.connection) {
+                            musicData.connection.destroy();
+                            musicData.connection = null;
+                        }
+
+                        playNextSong(voiceChannel, interaction, guildId);
                     }
-
-                    interaction.followUp("Reproducción detenida.");
-                }
-                break;
-            case `skip`:
-                {
-                    const guildId = interaction.guild.id;
-                    const musicData = getOrCreateMusicData(guildId);
-
-                    if (!musicData.isPlaying) {
-                        return interaction.followUp(
-                            "No hay canciones reproduciéndose."
-                        );
-                    }
-
-                    if (musicData.playlist.length === 0) {
-                        return interaction.followUp(
-                            "No hay más canciones en la lista."
-                        );
-                    }
-
-                    interaction.followUp("Canción saltada.");
-
-                    if (musicData.connection) {
-                        musicData.connection.destroy();
-                        musicData.connection = null;
-                    }
-
-                    playNextSong(voiceChannel, interaction, guildId);
-                }
-                break;
+                    break;
+            }
         }
     },
 };
