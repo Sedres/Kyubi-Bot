@@ -275,9 +275,10 @@ async function editPlaylistMessage(interaction, embed, guildId) {
   } catch (error) {
     // Si el mensaje no existe o se produce otro error, envía un nuevo mensaje
     await sendPlaylistMessage(interaction, embed, guildId)
-    return interaction.followUp(
-      'Se ha vuelto a crear el mensaje de la lista de reproducción.'
-    )
+    return interaction.followUp({
+      content: 'Se ha vuelto a crear el mensaje de la lista de reproducción.',
+      ephemeral: true
+    })
   }
 }
 
