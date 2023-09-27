@@ -174,12 +174,7 @@ async function playNextSong(voiceChannel, interaction, guildId) {
       content: 'Canción reproducida correctamente',
       ephemeral: true
     })
-
-    // Borra el embed después de 20 segundos
-    setTimeout(() => {
-      sentMessage.delete().catch(console.error)
-    }, 45000)
-
+    deleteNowPlayingMessage(sentMessage)
     player.on('idle', () => {
       if (musicData.playlist.length === 0) {
         musicData.isPlaying = false
@@ -197,6 +192,25 @@ async function playNextSong(voiceChannel, interaction, guildId) {
       playNextSong(voiceChannel, interaction, guildId)
     })
   }
+}
+
+// Borra el embed después de 20 segundos
+const deleteNowPlayingMessage = (sentMessage) => {
+  setTimeout(async () => {
+    try {
+      if (!sentMessage) return
+
+      await sentMessage.delete()
+      console.log('Mensaje eliminado con éxito.')
+    } catch (error) {
+      if (error.code === 10008) {
+        console.log('El mensaje ya no existe o fue eliminado manualmente.')
+      } else {
+        console.error('Error al eliminar el mensaje:', error)
+        // Puedes manejar otros errores aquí si es necesario
+      }
+    }
+  }, 45000)
 }
 
 function createNowPlayingEmbed(
